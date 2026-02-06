@@ -1,0 +1,106 @@
+# ==================================
+# INVENTÁRIO MN - GIT IGNORE
+# ==================================
+
+# Documentos internos / revisões (não para GitHub)
+REVISAO_COMPLETA_CODIGO.md
+CODE_REVIEW.md
+NOTAS_INTERNAS.md
+
+# ==================================
+# NODE
+# ==================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==================================
+# AMBIENTES / VARIÁVEIS SENSÍVEIS
+# ==================================
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env*.local
+
+# ==================================
+# BUILDS / ARTEFATOS
+# ==================================
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# ==================================
+# LOGS
+# ==================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==================================
+# ARQUIVOS TEMPORÁRIOS
+# ==================================
+*.tmp
+*.temp
+.cache/
+tmp/
+
+# ==================================
+# SISTEMA OPERACIONAL
+# ==================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ==================================
+# EDITORS / IDEs
+# ==================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ==================================
+# PRISMA
+# ==================================
+# Código gerado pelo Prisma
+/src/generated/prisma/
+
+# ==================================
+# UPLOADS LOCAIS
+# ==================================
+# Arquivos enviados (CSV, imagens, etc)
+uploads/
+temp-uploads/
+
+# ==================================
+# TESTES
+# ==================================
+.nyc_output/
+coverage/
+*.lcov
+
+# ==================================
+# OUTROS
+# ==================================
+.env.backup
+*.orig

@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------
+// MODELO: USER
+// ---------------------------------------------------------
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now())
+  removedAt DateTime?
+
+  inventories Inventory[]
+  products    Product[]
+}
+
+// ---------------------------------------------------------
+// MODELO: PRODUCT
+// ---------------------------------------------------------
+model Product {
+  id            String    @id @default(uuid())
+  code          String
+  description   String
+  unit          String?
+  lastInventory DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+
+  inventoryItems InventoryItem[]
+}
+
+// ---------------------------------------------------------
+// MODELO: INVENTORY (cabeçalho do inventário)
+// ---------------------------------------------------------
+model Inventory {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  // Relacionamento com user (opcional)
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  inventoryItems InventoryItem[]
+}
+
+// ---------------------------------------------------------
+// MODELO: INVENTORY_ITEM (N:N com dados específicos)
+// ---------------------------------------------------------
+model InventoryItem {
+  id String @id @default(uuid())
+
+  inventoryId String
+  productId   String
+
+  unitInput     String? @default("UN")
+  stockExpected Decimal @db.Decimal(10, 2)
+  stockCounted  Decimal @db.Decimal(10, 2)
+  difference    Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  // Relacionamentos
+  inventory Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id])
+
+  // Evita duplicar o mesmo produto no mesmo inventário
+  @@unique([inventoryId, productId])
+}
