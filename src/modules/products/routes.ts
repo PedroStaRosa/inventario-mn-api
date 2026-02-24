@@ -6,10 +6,12 @@ import { CreateProductByFileController } from "./controllers/CreateProductByFile
 
 import { CreateProductController } from "./controllers/CreateProductController";
 import { validateSchema } from "../../middlewares/validateSchema";
-import { createProductSchema } from "./schemas/productSchema";
+import { createManyProductsSchema, createProductSchema } from "./schemas/productSchema";
 import { uploadSingle } from "../../utils/multer";
 import { validateCsvMiddleware } from "../../middlewares/validateCsvMiddleware";
 import { productCsvConfig } from "./productCsvConfig";
+import { CreateManyProductsController } from "./controllers/CreateManyProductsController";
+import { validateCreateManyProducts } from "../../middlewares/validateCreateManyProducts";
 
 
 
@@ -165,5 +167,13 @@ ProductsRoutes.post(
   new CreateProductByFileController().handle
 );
 
+
+ProductsRoutes.post(
+  "/api/v1/products/import/many",
+  isAuthenticated,
+  validateSchema(createManyProductsSchema),
+  validateCreateManyProducts,
+  new CreateManyProductsController().handle
+);
 
 export default ProductsRoutes;
