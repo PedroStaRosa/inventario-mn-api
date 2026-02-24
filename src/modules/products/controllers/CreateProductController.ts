@@ -14,6 +14,10 @@ class CreateProductController {
 
             res.status(201).json(product)
         } catch (error: any) {
+
+            if (error instanceof Error) {
+                return res.status(400).json({ error: error.message });
+            }
             return res.status(error.statusCode || 500).json({
                 error: error.message || "Erro ao criar produto"
             });

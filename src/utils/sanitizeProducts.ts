@@ -7,7 +7,7 @@ export const sanitizeProduct = (product: CreateProductProps) => {
 
     let sanitizedCode = product.code;
     if (Number.isNaN(Number(sanitizedCode))) {
-        throw new Error(`Código ${sanitizedCode} não é um número válido`)
+        throw new Error(`Código ${sanitizedCode} não é um código válido`)
     }
 
     sanitizedCode = sanitizedCode.replace(/^0+/, '').replace(/[^\d]/g, '');
