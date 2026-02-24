@@ -1,4 +1,5 @@
 import prismaClient from "../../../prisma"
+import { sanitizeProduct } from "../../../utils/sanitizeProducts"
 
 interface CreateProductProps {
     code: string,
@@ -8,13 +9,15 @@ interface CreateProductProps {
 class CreateProductService {
     async execute({ code, description }: CreateProductProps, userId: string) {
 
-        const existProduct = await prismaClient.product.findFirst({ where: { code, userId } })
+
+        const sanitizedProduct = sanitizeProduct({ code, description })
+        const existProduct = await prismaClient.product.findFirst({ where: { code: sanitizedProduct.code, userId } })
 
         if (existProduct) {
             throw new Error("Produto já se encontra cadastrado no banco.")
         }
 
-        const product = await prismaClient.product.create({ data: { code: code, description: description, userId: userId } })
+        const product = await prismaClient.product.create({ data: { code: sanitizedProduct.code, description: sanitizedProduct.description, userId: userId } })
 
         return product
 
