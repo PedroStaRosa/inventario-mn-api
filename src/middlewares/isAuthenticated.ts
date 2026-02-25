@@ -31,7 +31,10 @@ export function isAuthenticated(
     //Validar esse token.
     const { sub } = verify(
       token as string,
-      process.env.JWT_SECRET_KEY as string
+      process.env.JWT_SECRET_KEY as string,
+      {
+        algorithms: ["HS256"],
+      }
     ) as Payload;
 
     //Recuperar o id do token e colocar dentro de uma variavel user_id dentro do req.
