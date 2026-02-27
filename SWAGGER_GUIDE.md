@@ -32,6 +32,7 @@ Agora você pode testar os endpoints protegidos diretamente pelo Swagger!
 - `POST /api/v1/user` - Criar usuário
 - `POST /api/v1/auth` - Autenticar (login)
 - `POST /api/v1/auth/refresh` - Renovar token
+- `GET /api/v1/auth/me` - Obter dados do usuário autenticado
 
 ### Produtos
 - `GET /api/v1/products` - Listar produtos

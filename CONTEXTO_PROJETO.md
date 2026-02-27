@@ -384,6 +384,32 @@ Autentica um usuário e retorna token JWT.
 }
 ```
 
+#### GET `/api/v1/auth/me`
+Retorna os dados do usuário autenticado com base no token JWT (usuário atual / "quem sou eu").
+
+**Middleware:** `isAuthenticated`, `authLimiter`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response:** 200 OK
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "email": "string",
+  "createdAt": "datetime",
+  "updatedAt": "datetime"
+}
+```
+
+**Erros:**
+- `401`: Token não fornecido ou inválido
+- `404`: Usuário não encontrado
+- `429`: Muitas requisições (rate limit)
+
 ---
 
 ### Módulo: Products (Produtos)

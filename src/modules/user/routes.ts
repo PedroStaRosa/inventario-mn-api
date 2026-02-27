@@ -6,6 +6,7 @@ import { CreateUserController } from "./controllers/CreateUserController";
 import { AuthUserController } from "./controllers/AuthUserController";
 import { RefreshTokenController } from "./controllers/RefreshTokenController";
 import { authLimiter } from "../../middlewares/rateLimiter";
+import { GetUserByTokenController } from "./controllers/getUserByTokenController";
 
 
 
@@ -149,6 +150,53 @@ UserRoutes.post(
   isAuthenticated,
   authLimiter,
   new RefreshTokenController().handle
+);
+
+/**
+ * @swagger
+ * /api/v1/auth/me:
+ *   get:
+ *     summary: Obter dados do usuário autenticado
+ *     description: Retorna os dados do usuário atual com base no token JWT. Requer autenticação via Bearer token. A senha não é retornada.
+ *     tags: [Autenticação]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dados do usuário retornados com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *             example:
+ *               id: "uuid"
+ *               name: "João Silva"
+ *               email: "joao@example.com"
+ *               createdAt: "2026-01-15T10:00:00.000Z"
+ *       401:
+ *         description: Token não fornecido ou inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Usuário não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Muitas requisições (rate limit)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+UserRoutes.get(
+  "/api/v1/auth/me",
+  isAuthenticated,
+  authLimiter,
+  new GetUserByTokenController().handle
 );
 
 export default UserRoutes;
