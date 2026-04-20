@@ -195,7 +195,7 @@ UserRoutes.post(
 UserRoutes.get(
   "/api/v1/auth/me",
   isAuthenticated,
-  authLimiter,
+  //authLimiter,
   new GetUserByTokenController().handle
 );
 
