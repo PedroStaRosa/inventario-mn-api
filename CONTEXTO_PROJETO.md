@@ -70,14 +70,16 @@ Estrutura principal da pasta `src`:
 src/
 ├── @types/              # Tipos globais (ex.: extensão de Request com user_id)
 ├── config/              # Configurações (Swagger, etc.)
+├── context/             # Contexto de request (AsyncLocalStorage / requestId)
 ├── generated/           # Código gerado pelo Prisma
-├── middlewares/         # Autenticação, rate limit, validação, CSV, etc.
+├── middlewares/         # Auth, rate limit, validação, CSV, request context, access log
 ├── modules/
 │   ├── user/            # Autenticação e usuário
 │   ├── products/        # Produtos
-│   └── inventory/       # Inventários
+│   ├── inventory/       # Inventários
+│   └── dashboard/       # Resumo agregado (KPIs do sistema)
 ├── prisma/              # Instância do Prisma Client
-├── utils/               # Utilitários (hash, CSV, upload)
+├── utils/               # Utilitários (hash, CSV, upload, logger)
 ├── app.ts               # Configuração do Express
 └── server.ts            # Bootstrap do servidor
 ```
@@ -109,6 +111,13 @@ src/
   - Telas de inventário (lista, detalhe, histórico).
   - Fluxos de upload de CSV de inventário.
   - Telas de sugestão de inventário (filtro por `days`, limite, etc.).
+
+### Módulo `dashboard`
+
+- **Responsável por**: resumo agregado do sistema (totais, métricas do período e listas recentes).
+- **Impacto no frontend**:
+  - Tela inicial / home com KPIs sem precisar baixar todos os produtos ou inventários.
+  - Endpoint único: `GET /api/v1/dashboard`.
 
 ---
 
@@ -226,6 +235,9 @@ Em produção, a base URL pode mudar, mas **o prefixo `/api/v1` é parte do cont
     - Por CSV (`POST /api/v1/inventory/import`).
   - Sugestão de produtos para criar inventário (`GET /api/v1/inventory/suggested?days=...`).
   - Histórico de inventários de um produto (`GET /api/v1/inventory/product?id=...`).
+
+- **Dashboard**:
+  - Resumo agregado para a home (`GET /api/v1/dashboard`).
 
 Todos esses fluxos estão descritos em detalhe, com payloads de entrada/saída, em `API_ENDPOINTS.md`.
 

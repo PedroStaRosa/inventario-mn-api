@@ -138,6 +138,10 @@ const swaggerDefinition = {
             name: 'Inventário',
             description: 'Endpoints para gerenciamento de inventários',
         },
+        {
+            name: 'Dashboard',
+            description: 'Resumo agregado do sistema (KPIs e listas recentes)',
+        },
     ],
 };
 

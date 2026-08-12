@@ -9,7 +9,8 @@
 2. [Autenticação e usuário](#autenticação-e-usuário)
 3. [Produtos](#produtos)
 4. [Inventários](#inventários)
-5. [Padrões de erro](#padrões-de-erro)
+5. [Dashboard](#dashboard)
+6. [Padrões de erro](#padrões-de-erro)
 
 ---
 
@@ -591,6 +592,66 @@ Regra importante:
   - `400 Bad Request`: id inválido (via schema).
   - `401 Unauthorized`: não autenticado.
   - `404 Not Found`: inventário não encontrado.
+
+---
+
+## 📈 Dashboard
+
+### GET `/dashboard` — Resumo agregado do sistema
+
+- **Descrição**: retorna totais, métricas do período e listas recentes em uma única chamada (ideal para a home do frontend).
+- **Auth**: **requer token**.
+- **Headers**:
+  - `Authorization: Bearer <token>`
+- **Query**:
+
+| Parâmetro | Tipo | Default | Descrição |
+|-----------|------|---------|-----------|
+| `days` | `number` | `30` | Janela em dias para métricas do período |
+| `recentInventoriesLimit` | `number` | `5` | Qtd. de inventários recentes (máx. 50) |
+| `recentProductsLimit` | `number` | `5` | Qtd. de produtos inventariados recentemente (máx. 50) |
+
+- **Respostas**:
+  - `200 OK`:
+
+    ```json
+    {
+      "period": {
+        "days": 30,
+        "from": "2026-06-23T15:00:00.000Z",
+        "to": "2026-07-23T15:00:00.000Z"
+      },
+      "totals": {
+        "products": 1250,
+        "inventories": 45,
+        "inventoriesLastDays": 18,
+        "productsNeverInventoried": 42,
+        "productsInventoriedLastDays": 80
+      },
+      "recentInventories": [
+        {
+          "id": "uuid",
+          "name": "Inventário Junho 2026",
+          "createdAt": "2026-06-26T12:00:00.000Z",
+          "itemsCount": 120
+        }
+      ],
+      "recentlyInventoriedProducts": [
+        {
+          "id": "uuid",
+          "code": "ABC-001",
+          "description": "Produto exemplo",
+          "unit": "UN",
+          "lastInventory": "2026-06-26T12:00:00.000Z"
+        }
+      ]
+    }
+    ```
+
+  - `401 Unauthorized`: token ausente/inválido.
+  - `400 Bad Request`: query inválida.
+
+> O frontend **não** deve usar `GET /products` + `GET /inventories` só para calcular esses totais.
 
 ---
 
