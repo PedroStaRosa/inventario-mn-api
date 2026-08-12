@@ -10,7 +10,6 @@ class SearchProductInventoriesService {
                     inventoryItems: true
                 },
             })
-        console.log(productInventories)
 
         if (!productInventories) {
             throw new Error("Produto não encontrado")
