@@ -1,5 +1,6 @@
 import { Request, Response } from "express"
 import { CreateProductByFileService } from "../services/CreateProductByFileService";
+import { getLogger } from "../../../utils/logger";
 
 
 
@@ -25,7 +26,7 @@ class CreateProductByFileController {
                 errors: result.errors,
             });
         } catch (error) {
-            console.log(error)
+            getLogger().error({ err: error }, "Falha ao importar arquivo de produtos");
             return res.status(500).json({ error: "Falha ao importar arquivo" });
         }
 

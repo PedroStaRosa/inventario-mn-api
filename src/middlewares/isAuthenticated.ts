@@ -1,13 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { verify } from "jsonwebtoken";
-
-declare global {
-  namespace Express {
-    interface Request {
-      user_id: string;
-    }
-  }
-}
+import { setRequestUserId } from "../context/requestContext";
 
 interface Payload {
   sub: string;
@@ -39,6 +32,7 @@ export function isAuthenticated(
 
     //Recuperar o id do token e colocar dentro de uma variavel user_id dentro do req.
     req.user_id = sub;
+    setRequestUserId(sub);
 
     return next();
   } catch (err) {

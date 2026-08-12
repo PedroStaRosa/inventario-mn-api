@@ -4,9 +4,13 @@ import ProductsRoutes from "./modules/products/routes";
 import UserRoutes from "./modules/user/routes";
 import { Request, Response, NextFunction } from "express";
 import InventoryRoutes from "./modules/inventory/routes";
+import DashboardRoutes from "./modules/dashboard/routes";
 import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
+import { requestContextMiddleware } from "./middlewares/requestContext";
+import { httpAccessLogger } from "./middlewares/httpAccessLogger";
+import { getLogger } from "./utils/logger";
 
 const app = express();
 
@@ -15,10 +19,13 @@ app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
 }));
 app.use(helmet());
 app.use(express.json());
+
+app.use(requestContextMiddleware);
+app.use(httpAccessLogger);
 
 // Swagger Documentation
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -26,10 +33,11 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 //Routes
 app.use(ProductsRoutes);
 app.use(UserRoutes);
-app.use(InventoryRoutes)
+app.use(InventoryRoutes);
+app.use(DashboardRoutes);
 //Error Handler
 app.use((error: Error, _: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', error);
+  getLogger().error({ err: error }, "Unhandled error");
 
   // Tratamento de erros do Multer
   if (error.message && error.message.includes("Inventory_")) {
