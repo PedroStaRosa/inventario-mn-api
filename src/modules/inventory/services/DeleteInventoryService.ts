@@ -1,21 +1,25 @@
-import prismaClient from "../../../prisma"
+import prismaClient from "../../../prisma";
 
 class DeleteInventoryService {
-    async execute(inventoryId: string, userId: string) {
-        const inventoryExists = await prismaClient.inventory.findFirst({ where: { id: inventoryId, userId: userId } })
+  async execute(inventoryId: string, userId: string) {
+    const inventoryExists = await prismaClient.inventory.findFirst({
+      where: { id: inventoryId, userId: userId },
+    });
 
-        if (!inventoryExists) {
-            throw new Error("Inventario não encontrado")
-        }
-        /* 
+    if (!inventoryExists) {
+      throw new Error("Inventario não encontrado");
+    }
+    /* 
                 if (inventoryExists.userId != userId) {
                     throw new Error("Usuario sem permissão para excluir inventario.")
                 } */
 
-        const inventoryDeleted = await prismaClient.inventory.delete({ where: { id: inventoryId } })
+    const inventoryDeleted = await prismaClient.inventory.delete({
+      where: { id: inventoryId, userId: userId },
+    });
 
-        return inventoryDeleted
-    }
+    return inventoryDeleted;
+  }
 }
 
-export { DeleteInventoryService }
+export { DeleteInventoryService };

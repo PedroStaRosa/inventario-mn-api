@@ -61,6 +61,7 @@ class CreateInventoryService {
           code: {
             in: productCodes,
           },
+          userId: data.userId,
         },
         data: {
           lastInventory: new Date(),
