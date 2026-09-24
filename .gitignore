@@ -25,11 +25,15 @@ lerna-debug.log*
 # AMBIENTES / VARIÁVEIS SENSÍVEIS
 # ==================================
 .env
-.env.local
-.env.development
-.env.production
-.env.test
-.env*.local
+.env.*
+!.env.example
+.env.backup
+# ==================================
+# CERTIFICADOS / CHAVES
+# ==================================
+*.pem
+*.key
+*.crt
 
 # ==================================
 # BUILDS / ARTEFATOS
