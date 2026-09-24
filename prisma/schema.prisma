@@ -39,6 +39,7 @@ model Product {
   description   String
   unit          String?
   lastInventory DateTime?
+  isAbcSales    Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now())
   userId        String
