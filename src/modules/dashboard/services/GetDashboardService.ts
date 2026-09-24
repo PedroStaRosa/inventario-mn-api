@@ -157,6 +157,19 @@ class GetDashboardService {
       ),
     };
 
+    const latestInventories = recentInventories
+      .slice(0, 5)
+      .map((inventory) => ({
+        id: inventory.id,
+        name: inventory.name,
+        createdAt: inventory.createdAt,
+        itemsCount: inventory._count.inventoryItems,
+        difference: inventory.inventoryItems.reduce(
+          (acc, item) => acc + Math.abs(Number(item.difference)),
+          0,
+        ),
+      }));
+
     return {
       period: {
         days,
@@ -173,20 +186,10 @@ class GetDashboardService {
         productsNeverInventoried,
         productsInventoriedLastDays,
       },
-
-      /* recentInventories: recentInventories.map((inventory) => ({
-        id: inventory.id,
-        name: inventory.name,
-        createdAt: inventory.createdAt,
-        itemsCount: inventory._count.inventoryItems,
-        difference: inventory.inventoryItems.reduce(
-          (acc, item) => acc + Math.abs(Number(item.difference)),
-          0,
-        ),
-      })), */
       recentlyInventoriedProducts,
       currentPeriod,
       previousPeriod,
+      latestInventories,
     };
   }
 }
