@@ -8,8 +8,6 @@ import { RefreshTokenController } from "./controllers/RefreshTokenController";
 import { authLimiter } from "../../middlewares/rateLimiter";
 import { GetUserByTokenController } from "./controllers/getUserByTokenController";
 
-
-
 const UserRoutes = Router();
 
 /**
@@ -66,8 +64,9 @@ const UserRoutes = Router();
  */
 UserRoutes.post(
   "/api/v1/user",
+  authLimiter,
   validateSchema(createUserSchema),
-  new CreateUserController().handle
+  new CreateUserController().handle,
 );
 
 /**
@@ -113,7 +112,7 @@ UserRoutes.post(
   "/api/v1/auth",
   authLimiter,
   validateSchema(authUserSchema),
-  new AuthUserController().handle
+  new AuthUserController().handle,
 );
 
 /**
@@ -149,7 +148,7 @@ UserRoutes.post(
   "/api/v1/auth/refresh",
   isAuthenticated,
   authLimiter,
-  new RefreshTokenController().handle
+  new RefreshTokenController().handle,
 );
 
 /**
@@ -196,7 +195,7 @@ UserRoutes.get(
   "/api/v1/auth/me",
   isAuthenticated,
   //authLimiter,
-  new GetUserByTokenController().handle
+  new GetUserByTokenController().handle,
 );
 
 export default UserRoutes;
