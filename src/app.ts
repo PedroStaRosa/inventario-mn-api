@@ -15,12 +15,16 @@ import { getLogger } from "./utils/logger";
 const app = express();
 
 /* app.use(cors()); */
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
-}));
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGINS?.split(",") || [
+      "http://localhost:3000",
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
+  }),
+);
 app.use(helmet());
 app.use(express.json());
 
@@ -41,17 +45,17 @@ app.use((error: Error, _: Request, res: Response, next: NextFunction) => {
 
   // Tratamento de erros do Multer
   if (error.message && error.message.includes("Inventory_")) {
-    const errorMessage = error.message.split("_")[1]
-    if (errorMessage!.includes("Nome de inventário já se encontra cadastrado no banco.")) {
+    const errorMessage = error.message.split("_")[1];
+    if (
+      errorMessage!.includes(
+        "Nome de inventário já se encontra cadastrado no banco.",
+      )
+    ) {
       return res.status(400).json({ error: errorMessage });
     }
     if (errorMessage!.includes("Produtos não encontrados:")) {
       return res.status(404).json({ error: errorMessage });
     }
-  }
-
-  if (error.message.includes("Apenas arquivos CSV são permitidos")) {
-    return res.status(400).json({ error: error.message });
   }
 
   if (error.message.includes("Credenciais")) {
@@ -66,7 +70,10 @@ app.use((error: Error, _: Request, res: Response, next: NextFunction) => {
     return res.status(404).json({ error: error.message });
   }
 
-  if (error.message.includes("já existe") || error.message.includes("already exists")) {
+  if (
+    error.message.includes("já existe") ||
+    error.message.includes("already exists")
+  ) {
     return res.status(409).json({ error: error.message });
   }
 

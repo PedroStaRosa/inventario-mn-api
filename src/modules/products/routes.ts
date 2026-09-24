@@ -2,19 +2,17 @@ import { Router } from "express";
 import { ListProductsController } from "./controllers/ListProductsController";
 
 import { isAuthenticated } from "../../middlewares/isAuthenticated";
-import { CreateProductByFileController } from "./controllers/CreateProductByFileController";
 
 import { CreateProductController } from "./controllers/CreateProductController";
 import { validateSchema } from "../../middlewares/validateSchema";
-import { createManyProductsSchema, createProductSchema } from "./schemas/productSchema";
-import { uploadSingle } from "../../utils/multer";
-import { validateCsvMiddleware } from "../../middlewares/validateCsvMiddleware";
-import { productCsvConfig } from "./productCsvConfig";
+import {
+  createManyProductsSchema,
+  createProductSchema,
+} from "./schemas/productSchema";
+
 import { CreateManyProductsController } from "./controllers/CreateManyProductsController";
 import { validateCreateManyProducts } from "../../middlewares/validateCreateManyProducts";
-
-
-
+import UpdateABCSalesController from "./controllers/SetABCSalesController";
 
 const ProductsRoutes = Router();
 
@@ -51,7 +49,7 @@ const ProductsRoutes = Router();
 ProductsRoutes.get(
   "/api/v1/products",
   isAuthenticated,
-  new ListProductsController().handle
+  new ListProductsController().handle,
 );
 
 /**
@@ -110,70 +108,21 @@ ProductsRoutes.post(
   "/api/v1/products",
   isAuthenticated,
   validateSchema(createProductSchema),
-  new CreateProductController().handle
-)
-
-/**
- * @swagger
- * /api/v1/products/import:
- *   post:
- *     summary: Importar produtos via arquivo CSV
- *     tags: [Produtos]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             required:
- *               - file
- *             properties:
- *               file:
- *                 type: string
- *                 format: binary
- *                 description: Arquivo CSV com os produtos (colunas: code, description)
- *     responses:
- *       201:
- *         description: Produtos importados com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 imported:
- *                   type: number
- *       400:
- *         description: Arquivo inválido ou formato incorreto
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Não autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-ProductsRoutes.post(
-  "/api/v1/products/import",
-  isAuthenticated,
-  uploadSingle("file"),
-  validateCsvMiddleware(productCsvConfig),
-  new CreateProductByFileController().handle
+  new CreateProductController().handle,
 );
-
 
 ProductsRoutes.post(
   "/api/v1/products/import/many",
   isAuthenticated,
   validateSchema(createManyProductsSchema),
   validateCreateManyProducts,
-  new CreateManyProductsController().handle
+  new CreateManyProductsController().handle,
+);
+
+ProductsRoutes.put(
+  "/api/v1/products/updateABCSales",
+  isAuthenticated,
+  new UpdateABCSalesController().handle,
 );
 
 export default ProductsRoutes;

@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { isAuthenticated } from "../../middlewares/isAuthenticated";
-import { uploadSingle } from "../../utils/multer";
-import { CreateInventoryByFileController } from "./controllers/CreateInventoryByFileController";
-import { validateCsvMiddleware } from "../../middlewares/validateCsvMiddleware";
-import { inventoryCsvConfig } from "./InventoryCsvConfig";
 import { validateSchema } from "../../middlewares/validateSchema";
-import { createInventoryByFileSchema, createInventorySchema, idInventorySchema, idProductInventorySchema, suggestedInventorySchema } from "./schemas/inventorySchema";
+import {
+  createInventorySchema,
+  idInventorySchema,
+  idProductInventorySchema,
+  suggestedInventorySchema,
+} from "./schemas/inventorySchema";
 import { DeleteInventoryController } from "./controllers/DeleteInventoryController";
 import { ListAllInventoriesController } from "./controllers/ListAllInventoriesController";
 import { CreateInventoryController } from "./controllers/CreateInventoryController";
@@ -13,7 +14,6 @@ import { ListInventaryByIdController } from "./controllers/ListInventoryByIdCont
 import { SuggestedInventoryController } from "./controllers/SuggestedInventoryController";
 import { apiLimiter } from "../../middlewares/rateLimiter";
 import { SearchProductInventoriesController } from "./controllers/SearchProductInventoriesController";
-
 
 const InventoryRoutes = Router();
 
@@ -42,9 +42,9 @@ const InventoryRoutes = Router();
  *               $ref: '#/components/schemas/Error'
  */
 InventoryRoutes.get(
-    "/api/v1/inventories",
-    isAuthenticated,
-    new ListAllInventoriesController().handle
+  "/api/v1/inventories",
+  isAuthenticated,
+  new ListAllInventoriesController().handle,
 );
 
 /**
@@ -83,10 +83,10 @@ InventoryRoutes.get(
  *               $ref: '#/components/schemas/Error'
  */
 InventoryRoutes.get(
-    "/api/v1/inventory",
-    isAuthenticated,
-    validateSchema(idInventorySchema),
-    new ListInventaryByIdController().handle
+  "/api/v1/inventory",
+  isAuthenticated,
+  validateSchema(idInventorySchema),
+  new ListInventaryByIdController().handle,
 );
 
 /**
@@ -128,10 +128,10 @@ InventoryRoutes.get(
  *               $ref: '#/components/schemas/Error'
  */
 InventoryRoutes.get(
-    "/api/v1/inventory/suggested",
-    isAuthenticated,
-    validateSchema(suggestedInventorySchema),
-    new SuggestedInventoryController().handle
+  "/api/v1/inventory/suggested",
+  isAuthenticated,
+  validateSchema(suggestedInventorySchema),
+  new SuggestedInventoryController().handle,
 );
 
 /**
@@ -179,72 +179,10 @@ InventoryRoutes.get(
  *               $ref: '#/components/schemas/Error'
  */
 InventoryRoutes.get(
-    "/api/v1/inventory/product",
-    isAuthenticated,
-    validateSchema(idProductInventorySchema),
-    new SearchProductInventoriesController().handle
-)
-
-/**
- * @swagger
- * /api/v1/inventory/import:
- *   post:
- *     summary: Criar inventário via importação de arquivo CSV
- *     tags: [Inventário]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             required:
- *               - file
- *               - inventoryName
- *             properties:
- *               file:
- *                 type: string
- *                 format: binary
- *                 description: Arquivo CSV com os itens do inventário
- *               inventoryName:
- *                 type: string
- *                 description: Nome do inventário
- *                 example: Inventário Mensal - Janeiro 2024
- *     responses:
- *       201:
- *         description: Inventário criado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Inventory'
- *       400:
- *         description: Dados inválidos ou arquivo incorreto
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Não autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Produtos não encontrados no CSV
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-InventoryRoutes.post(
-    "/api/v1/inventory/import",
-    isAuthenticated,
-    apiLimiter,
-    uploadSingle("file"),
-    validateCsvMiddleware(inventoryCsvConfig),
-    validateSchema(createInventoryByFileSchema),
-    new CreateInventoryByFileController().handle
+  "/api/v1/inventory/product",
+  isAuthenticated,
+  validateSchema(idProductInventorySchema),
+  new SearchProductInventoriesController().handle,
 );
 
 /**
@@ -318,12 +256,12 @@ InventoryRoutes.post(
  *               $ref: '#/components/schemas/Error'
  */
 InventoryRoutes.post(
-    "/api/v1/inventory",
-    isAuthenticated,
-    apiLimiter,
-    validateSchema(createInventorySchema),
-    new CreateInventoryController().handle
-)
+  "/api/v1/inventory",
+  isAuthenticated,
+  apiLimiter,
+  validateSchema(createInventorySchema),
+  new CreateInventoryController().handle,
+);
 
 /**
  * @swagger
@@ -365,11 +303,10 @@ InventoryRoutes.post(
  *               $ref: '#/components/schemas/Error'
  */
 InventoryRoutes.delete(
-    "/api/v1/inventory",
-    isAuthenticated,
-    validateSchema(idInventorySchema),
-    new DeleteInventoryController().handle)
+  "/api/v1/inventory",
+  isAuthenticated,
+  validateSchema(idInventorySchema),
+  new DeleteInventoryController().handle,
+);
 
-
-
-export default InventoryRoutes
+export default InventoryRoutes;
