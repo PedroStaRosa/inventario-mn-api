@@ -1,5 +1,6 @@
 import prismaClient from "../../../prisma";
 import { sanitizeProduct } from "../../../utils/sanitizeProducts";
+import { getLogger } from "../../../utils/logger";
 import { CreateProductProps } from "../schemas/productSchema";
 
 interface ProcessResult {
@@ -22,9 +23,6 @@ class CreateManyProductsService {
       skipped: [],
       errors: [],
     };
-
-    /* Sanitizar os produtos antes de qualquer interação com o banco de dados,
-garantindo que code seja um inteiro e descrição esteja correta */
 
     const sanitizedProducts: CreateProductProps[] = products.map((product) =>
       sanitizeProduct(product),
@@ -75,12 +73,13 @@ garantindo que code seja um inteiro e descrição esteja correta */
       });
 
       result.created.push(...toCreate);
-    } catch (error: any) {
+    } catch (error) {
+      getLogger().error({ err: error }, "Falha ao cadastrar produtos em lote");
       for (const product of toCreate) {
         result.errors.push({
           code: product.code,
           description: product.description,
-          error: error.message || "Erro ao cadastrar produto",
+          error: "Erro ao cadastrar produto",
         });
       }
     }

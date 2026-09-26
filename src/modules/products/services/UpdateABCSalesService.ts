@@ -1,4 +1,5 @@
 import prismaClient from "../../../prisma";
+import { getLogger } from "../../../utils/logger";
 
 class UpdateABCSalesService {
   async execute(id: string, userId: string) {
@@ -20,8 +21,15 @@ class UpdateABCSalesService {
         },
       });
       return updatedProduct;
-    } catch (error: any) {
-      throw new Error(error.message);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "Produto não encontrado."
+      ) {
+        throw error;
+      }
+      getLogger().error({ err: error }, "Falha ao atualizar ABC de vendas");
+      throw new Error("Erro interno ao atualizar produto.");
     }
   }
 }

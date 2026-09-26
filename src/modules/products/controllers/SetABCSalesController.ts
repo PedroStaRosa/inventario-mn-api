@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { UpdateABCSalesService } from "../services/UpdateABCSalesService";
+import { respondWithMappedError } from "../../../utils/respondWithMappedError";
 
 class UpdateABCSalesController {
   async handle(req: Request, res: Response) {
@@ -23,12 +24,9 @@ class UpdateABCSalesController {
         message: "ABC de venda definido com sucesso.",
         product: product,
       });
-    } catch (error: any) {
-      if (error instanceof Error) {
-        return res.status(404).json({ error: error.message, product: null });
-      }
-      return res.status(500).json({
-        error: error.message || "Erro ao definir ABC de venda",
+    } catch (error) {
+      return respondWithMappedError(res, error, "Falha ao definir ABC de venda", {
+        product: null,
       });
     }
   }

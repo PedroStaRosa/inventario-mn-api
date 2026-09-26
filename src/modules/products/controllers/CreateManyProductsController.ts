@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { CreateManyProductsService } from "../services/CreateManyProductsService";
+import { respondWithMappedError } from "../../../utils/respondWithMappedError";
 
 class CreateManyProductsController {
   async handle(req: Request, res: Response) {
@@ -22,10 +23,11 @@ class CreateManyProductsController {
         errors: result.errors,
       });
     } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({ error: error.message });
-      }
-      return res.status(500).json({ error: "Falha ao importar arquivo" });
+      return respondWithMappedError(
+        res,
+        error,
+        "Falha ao importar produtos em lote",
+      );
     }
   }
 }

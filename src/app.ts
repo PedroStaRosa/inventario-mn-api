@@ -10,6 +10,7 @@ import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 import { requestContextMiddleware } from "./middlewares/requestContext";
 import { httpAccessLogger } from "./middlewares/httpAccessLogger";
+import { mapErrorForClient } from "./utils/respondWithMappedError";
 import { getLogger } from "./utils/logger";
 
 const app = express();
@@ -43,41 +44,8 @@ app.use(DashboardRoutes);
 app.use((error: Error, _: Request, res: Response, next: NextFunction) => {
   getLogger().error({ err: error }, "Unhandled error");
 
-  // Tratamento de erros do Multer
-  if (error.message && error.message.includes("Inventory_")) {
-    const errorMessage = error.message.split("_")[1];
-    if (
-      errorMessage!.includes(
-        "Nome de inventário já se encontra cadastrado no banco.",
-      )
-    ) {
-      return res.status(400).json({ error: errorMessage });
-    }
-    if (errorMessage!.includes("Produtos não encontrados:")) {
-      return res.status(404).json({ error: errorMessage });
-    }
-  }
-
-  if (error.message.includes("Credenciais")) {
-    return res.status(401).json({ error: error.message });
-  }
-
-  if (error.message.includes("sem permissão")) {
-    return res.status(403).json({ error: error.message });
-  }
-
-  if (error.message.includes("não encontrado")) {
-    return res.status(404).json({ error: error.message });
-  }
-
-  if (
-    error.message.includes("já existe") ||
-    error.message.includes("already exists")
-  ) {
-    return res.status(409).json({ error: error.message });
-  }
-
-  return res.status(500).json({ error: "Erro interno do servidor" });
+  const mapped = mapErrorForClient(error);
+  return res.status(mapped.status).json({ error: mapped.message });
 });
 
 export default app;
