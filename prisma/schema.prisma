@@ -26,8 +26,24 @@ model User {
   updatedAt DateTime  @default(now())
   removedAt DateTime?
 
-  inventories Inventory[]
-  products    Product[]
+  inventories   Inventory[]
+  products      Product[]
+  refreshTokens RefreshToken[]
+}
+
+// ---------------------------------------------------------
+// MODELO: REFRESH_TOKEN (sessão renovável / revogável)
+// ---------------------------------------------------------
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // ---------------------------------------------------------

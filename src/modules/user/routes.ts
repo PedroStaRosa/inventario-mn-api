@@ -1,10 +1,16 @@
 import { Router } from "express";
 import { validateSchema } from "../../middlewares/validateSchema";
 import { isAuthenticated } from "../../middlewares/isAuthenticated";
-import { authUserSchema, createUserSchema } from "./schemas/userSchema";
+import {
+  authUserSchema,
+  createUserSchema,
+  logoutSchema,
+  refreshTokenSchema,
+} from "./schemas/userSchema";
 import { CreateUserController } from "./controllers/CreateUserController";
 import { AuthUserController } from "./controllers/AuthUserController";
 import { RefreshTokenController } from "./controllers/RefreshTokenController";
+import { LogoutController } from "./controllers/LogoutController";
 import { authLimiter } from "../../middlewares/rateLimiter";
 import { GetUserByTokenController } from "./controllers/getUserByTokenController";
 
@@ -40,6 +46,7 @@ const UserRoutes = Router();
  *               password:
  *                 type: string
  *                 minLength: 8
+ *                 maxLength: 32
  *                 description: Senha do usuário (deve conter pelo menos uma letra maiúscula, uma minúscula e um número)
  *                 example: Senha123
  *     responses:
@@ -96,7 +103,7 @@ UserRoutes.post(
  *                 example: Senha123
  *     responses:
  *       200:
- *         description: Autenticação realizada com sucesso
+ *         description: Autenticação realizada com sucesso. Retorna access token (JWT) e refresh token opaco.
  *         content:
  *           application/json:
  *             schema:
@@ -119,26 +126,30 @@ UserRoutes.post(
  * @swagger
  * /api/v1/auth/refresh:
  *   post:
- *     summary: Renovar token de acesso
+ *     summary: Renovar access token com refresh token opaco
+ *     description: Não usa Bearer do access token. Envie o refreshToken no body. O refresh atual é revogado (rotação) e um novo par é emitido.
  *     tags: [Autenticação]
- *     security:
- *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token opaco obtido no login ou no refresh anterior
  *     responses:
  *       200:
- *         description: Token renovado com sucesso
+ *         description: Tokens renovados com sucesso
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   description: Novo token JWT
- *                 refreshToken:
- *                   type: string
- *                   description: Novo token de refresh
+ *               $ref: '#/components/schemas/AuthResponse'
  *       401:
- *         description: Token inválido ou expirado
+ *         description: Refresh token inválido, expirado ou reutilizado
  *         content:
  *           application/json:
  *             schema:
@@ -146,9 +157,45 @@ UserRoutes.post(
  */
 UserRoutes.post(
   "/api/v1/auth/refresh",
-  isAuthenticated,
   authLimiter,
+  validateSchema(refreshTokenSchema),
   new RefreshTokenController().handle,
+);
+
+/**
+ * @swagger
+ * /api/v1/auth/logout:
+ *   post:
+ *     summary: Encerrar sessão (revogar refresh token)
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token a ser revogado
+ *     responses:
+ *       200:
+ *         description: Sessão encerrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+UserRoutes.post(
+  "/api/v1/auth/logout",
+  authLimiter,
+  validateSchema(logoutSchema),
+  new LogoutController().handle,
 );
 
 /**
@@ -194,7 +241,6 @@ UserRoutes.post(
 UserRoutes.get(
   "/api/v1/auth/me",
   isAuthenticated,
-  //authLimiter,
   new GetUserByTokenController().handle,
 );
 

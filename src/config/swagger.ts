@@ -110,16 +110,26 @@ const swaggerDefinition = {
             AuthResponse: {
                 type: 'object',
                 properties: {
+                    id: {
+                        type: 'string',
+                        description: 'ID do usuário',
+                    },
+                    name: {
+                        type: 'string',
+                        description: 'Nome do usuário',
+                    },
+                    email: {
+                        type: 'string',
+                        format: 'email',
+                        description: 'Email do usuário',
+                    },
                     token: {
                         type: 'string',
-                        description: 'Token JWT de acesso',
+                        description: 'Access token JWT (curta duração)',
                     },
                     refreshToken: {
                         type: 'string',
-                        description: 'Token de refresh',
-                    },
-                    user: {
-                        $ref: '#/components/schemas/User',
+                        description: 'Refresh token opaco (longa duração). Usar no body de /api/v1/auth/refresh',
                     },
                 },
             },

@@ -33,3 +33,13 @@ export const authUserSchema = z.object({
       .max(32, { message: "A senha deve ter no máximo 32 caracteres" }),
   }),
 });
+
+export const refreshTokenSchema = z.object({
+  body: z.object({
+    refreshToken: z
+      .string({ message: "O refreshToken é obrigatório" })
+      .min(1, { message: "O refreshToken é obrigatório" }),
+  }),
+});
+
+export const logoutSchema = refreshTokenSchema;

@@ -1,37 +1,73 @@
-import { User } from "../../../generated/prisma/client";
 import prismaClient from "../../../prisma";
-import jwt from "jsonwebtoken";
 import { generateToken } from "../../../utils/generateToken";
+import {
+  createOpaqueRefreshToken,
+  getRefreshExpiresAt,
+  hashRefreshToken,
+} from "../../../utils/refreshToken";
+import {
+  revokeAllRefreshTokens,
+  toAuthUserPayload,
+} from "./refreshTokenStore";
 
 interface RefreshTokenProps {
-    userId: string;
+  refreshToken: string;
 }
 
 class RefreshTokenService {
-    async execute({ userId }: RefreshTokenProps) {
-        const user = await prismaClient.user.findFirst({
-            where: {
-                id: userId,
-                removedAt: null,
-            },
-        });
+  async execute({ refreshToken }: RefreshTokenProps) {
+    const tokenHash = hashRefreshToken(refreshToken);
 
-        if (!user) {
-            throw new Error("Usuário não encontrado ou removido.");
-        }
+    const stored = await prismaClient.refreshToken.findUnique({
+      where: { tokenHash },
+      include: {
+        user: true,
+      },
+    });
 
-        const newToken = generateToken(user);
-
-        return {
-            token: newToken,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-            },
-        };
+    if (!stored) {
+      throw new Error("Refresh token inválido.");
     }
+
+    if (stored.revokedAt) {
+      await revokeAllRefreshTokens(stored.userId);
+      throw new Error("Refresh token inválido.");
+    }
+
+    if (stored.expiresAt.getTime() <= Date.now()) {
+      await prismaClient.refreshToken.update({
+        where: { id: stored.id },
+        data: { revokedAt: new Date() },
+      });
+      throw new Error("Refresh token expirado.");
+    }
+
+    if (stored.user.removedAt) {
+      await revokeAllRefreshTokens(stored.userId);
+      throw new Error("Usuário não encontrado ou removido.");
+    }
+
+    const newRefreshToken = createOpaqueRefreshToken();
+    const newRefreshHash = hashRefreshToken(newRefreshToken);
+
+    await prismaClient.$transaction([
+      prismaClient.refreshToken.update({
+        where: { id: stored.id },
+        data: { revokedAt: new Date() },
+      }),
+      prismaClient.refreshToken.create({
+        data: {
+          tokenHash: newRefreshHash,
+          userId: stored.userId,
+          expiresAt: getRefreshExpiresAt(),
+        },
+      }),
+    ]);
+
+    const token = generateToken(stored.user);
+
+    return toAuthUserPayload(stored.user, token, newRefreshToken);
+  }
 }
 
 export { RefreshTokenService };
-
