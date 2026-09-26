@@ -1,7 +1,7 @@
 # Catálogo de Endpoints - Inventário MN
 
-> **Objetivo**: este documento é uma visão consolidada dos endpoints da API, pensada para quem está desenvolvendo o **frontend**.  
-> Para detalhes de arquitetura e regras de negócio, consulte `CONTEXTO_PROJETO.md`.
+> **Objetivo**: visão consolidada dos endpoints para quem desenvolve o **frontend**.  
+> Regras de domínio, modelos e rate limit estão em `API_DOCUMENTATION.md`.
 
 ## 📋 Índice
 
@@ -11,63 +11,30 @@
 4. [Inventários](#inventários)
 5. [Dashboard](#dashboard)
 6. [Padrões de erro](#padrões-de-erro)
+7. [Dicas de uso no frontend](#dicas-de-uso-no-frontend)
 
 ---
 
 ## ℹ️ Informações gerais
 
 - **Base URL (dev)**: `http://localhost:3000/api/v1`
-- **Formato padrão**:
-  - Requests: `application/json` (exceto uploads de CSV, que usam `multipart/form-data`).
-  - Responses: `application/json`.
+- **Formato**: `application/json` na ida e na volta.
 - **Autenticação**:
-  - Header: `Authorization: Bearer <token>`.
-  - Necessária em todos os endpoints protegidos (marcados abaixo).
+  - Rotas protegidas: `Authorization: Bearer <token>`.
+  - `token` é o access token JWT.
+  - `refreshToken` é opaco e vai no **body**, nunca no header Bearer.
+- **Correlação**: envie `X-Request-Id` se quiser; a API devolve o mesmo valor em `x-request-id`.
+- **Swagger**: `http://localhost:3000/api-docs` fora de produção.
+
+Rotas públicas: `POST /user`, `POST /auth`, `POST /auth/refresh`, `POST /auth/logout`.
 
 ---
 
 ## 👤 Autenticação e usuário
 
-### POST `/auth` — Login
-
-- **Descrição**: autentica um usuário e retorna o token JWT (e dados básicos do usuário).
-- **Auth**: **não requer** token.
-- **Headers**:
-  - `Content-Type: application/json`
-- **Body**:
-
-```json
-{
-  "email": "user@example.com",
-  "password": "Senha123"
-}
-```
-
-- **Respostas**:
-  - `200 OK`:
-
-    ```json
-    {
-      "token": "jwt_token",
-      "user": {
-        "id": "uuid",
-        "name": "string",
-        "email": "string"
-      }
-    }
-    ```
-
-  - `401 Unauthorized`: credenciais inválidas.
-  - `429 Too Many Requests`: muitas tentativas de login (rate limit).
-
----
-
 ### POST `/user` — Criar usuário
 
-- **Descrição**: cria um novo usuário.
-- **Auth**: pública (sem token).
-- **Headers**:
-  - `Content-Type: application/json`
+- **Auth**: pública.
 - **Body**:
 
 ```json
@@ -78,59 +45,106 @@
 }
 ```
 
-Regras da senha:
-
-- Mínimo 8 caracteres.
-- Deve conter pelo menos:
-  - 1 letra maiúscula.
-  - 1 letra minúscula.
-  - 1 número.
+Senha: 8 a 32 caracteres, com maiúscula, minúscula e número. Nome com no mínimo 3 caracteres.
 
 - **Respostas**:
-  - `201 Created`:
+  - `200 OK`:
 
     ```json
     {
       "id": "uuid",
       "name": "string",
       "email": "string",
-      "createdAt": "2026-01-15T10:00:00.000Z"
+      "createdAt": "2026-09-26T18:00:00.000Z"
     }
     ```
 
-  - `400 Bad Request`: dados inválidos.
-  - `409 Conflict`: email já cadastrado.
+  - `400`: validação.
+  - `409`: `{ "error": "Usuário já cadastrado." }`
+  - `429`: muitas tentativas de cadastro.
 
 ---
 
-### POST `/auth/refresh` — Renovar token
+### POST `/auth` — Login
 
-- **Descrição**: renova o token de acesso usando o usuário autenticado.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-- **Body**: vazio.
+- **Auth**: pública.
+- **Body**:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "Senha123"
+}
+```
+
 - **Respostas**:
   - `200 OK`:
 
     ```json
     {
-      "token": "novo_token_jwt",
-      "refreshToken": "novo_refresh_token"
+      "id": "uuid",
+      "name": "string",
+      "email": "string",
+      "token": "jwt_access_token",
+      "refreshToken": "refresh_token_opaco"
     }
     ```
 
-  - `401 Unauthorized`: token inválido ou expirado.
+  - `400`: validação.
+  - `401`: `{ "error": "Credenciais inválidas." }`
+  - `429`: muitas tentativas de login.
+
+Guarde `token` e `refreshToken`. O objeto do usuário vem na raiz, sem aninhar em `user`.
+
+---
+
+### POST `/auth/refresh` — Renovar tokens
+
+- **Auth**: **não** envie Bearer. O access token pode estar expirado.
+- **Body**:
+
+```json
+{
+  "refreshToken": "refresh_token_opaco"
+}
+```
+
+- **Respostas**:
+  - `200 OK`: o mesmo formato do login (`id`, `name`, `email`, `token`, `refreshToken`).
+  - `400`: `refreshToken` ausente.
+  - `401`:
+    - `{ "error": "Refresh token inválido." }` — desconhecido ou já usado.
+    - `{ "error": "Refresh token expirado." }`
+    - `{ "error": "Usuário não encontrado ou removido." }`
+  - `429`: muitas renovações.
+
+Substitua os dois tokens guardados. O refresh anterior foi revogado. Reenviar um refresh já revogado invalida todas as sessões daquele usuário.
+
+---
+
+### POST `/auth/logout` — Encerrar sessão
+
+- **Auth**: pública. Envie o refresh token atual.
+- **Body**:
+
+```json
+{
+  "refreshToken": "refresh_token_opaco"
+}
+```
+
+- **Respostas**:
+  - `200 OK`: `{ "message": "Sessão encerrada." }` — também quando o token já era inválido.
+  - `400`: `refreshToken` ausente.
+  - `429`: muitas tentativas.
+
+Apague os tokens no cliente. O access token deixa de renovar, mas segue válido até expirar.
 
 ---
 
 ### GET `/auth/me` — Usuário atual
 
-- **Descrição**: retorna os dados do usuário autenticado (sem senha).
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-- **Query/Body**: não possui.
+- **Auth**: Bearer.
 - **Respostas**:
   - `200 OK`:
 
@@ -144,20 +158,20 @@ Regras da senha:
     }
     ```
 
-  - `401 Unauthorized`: token não fornecido ou inválido.
-  - `404 Not Found`: usuário não encontrado.
+  - `401`: token ausente (`Authorization token is required`) ou inválido (`token invalid`), na chave `message`.
+  - `404`: `{ "error": "Usuário não encontrado." }`
 
 ---
 
 ## 📦 Produtos
 
+Unidades válidas: `UN`, `KG`, `LT`, `SC`, `PT`.
+
+`code` é numérico. A API grava sem zeros à esquerda (`000123` → `123`).
+
 ### GET `/products` — Listar produtos
 
-- **Descrição**: lista todos os produtos do usuário autenticado.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-- **Query/Body**: não possui.
+- **Auth**: Bearer.
 - **Respostas**:
   - `200 OK`:
 
@@ -166,151 +180,135 @@ Regras da senha:
       "products": [
         {
           "id": "uuid",
-          "code": "string",
+          "code": "123",
           "description": "string",
-          "unit": "string | null",
+          "unit": "UN",
           "lastInventory": "datetime | null",
+          "isAbcSales": false,
           "createdAt": "datetime",
-          "updatedAt": "datetime"
+          "updatedAt": "datetime",
+          "userId": "uuid"
         }
       ],
       "total_products": 1
     }
     ```
 
-  - `401 Unauthorized`: não autenticado.
+  - `401`: não autenticado.
 
 ---
 
 ### POST `/products` — Criar produto
 
-- **Descrição**: cria um novo produto.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-  - `Content-Type: application/json`
+- **Auth**: Bearer.
 - **Body**:
 
 ```json
 {
-  "code": "PROD001",
-  "description": "Produto de exemplo"
+  "code": "000123",
+  "description": "Produto de exemplo",
+  "unit": "UN"
 }
 ```
 
-- **Respostas**:
-  - `201 Created`:
-
-    ```json
-    {
-      "id": "uuid",
-      "code": "PROD001",
-      "description": "Produto de exemplo",
-      "unit": null,
-      "lastInventory": null,
-      "createdAt": "datetime",
-      "updatedAt": "datetime"
-    }
-    ```
-
-  - `400 Bad Request`: dados inválidos.
-  - `401 Unauthorized`: não autenticado.
-  - `409 Conflict`: código de produto já existe.
-
----
-
-### POST `/products/import` — Importar produtos via CSV
-
-- **Descrição**: importa produtos a partir de um arquivo CSV.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-  - `Content-Type: multipart/form-data`
-- **Body (form-data)**:
-  - `file`: arquivo CSV (`type: file`).
-
-Formato esperado do CSV (configuração atual):
-
-- Separador: `;`
-- Encoding: `latin1`
-- Headers (exemplo): `["Código do Produto", "Descrição do Produto"]`  
-  (ver `productCsvConfig` para o padrão exato).
+`unit` é obrigatória.
 
 - **Respostas**:
-  - `201 Created` (ou `200 OK`, conforme implementação atual):
-
-    ```json
-    {
-      "message": "Produtos importados com sucesso",
-      "imported": 10
-    }
-    ```
-
-  - `400 Bad Request`: arquivo inválido (tipo errado, headers incorretos, CSV vazio).
-  - `401 Unauthorized`: não autenticado.
+  - `201 Created`: produto criado (`code` já sanitizado, `isAbcSales: false`).
+  - `400`: validação ou `{ "error": "Código do produto inválido." }`
+  - `401`: não autenticado.
+  - `409`: `{ "error": "Produto já cadastrado." }`
 
 ---
 
 ### POST `/products/import/many` — Importar vários produtos via JSON
 
-- **Descrição**: cria vários produtos em uma única chamada utilizando JSON.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-  - `Content-Type: application/json`
-- **Body** (estrutura inferida do schema `createManyProductsSchema`):
+- **Auth**: Bearer.
+- **Body**:
 
 ```json
 {
   "products": [
-    {
-      "code": "PROD001",
-      "description": "Produto 1"
-    },
-    {
-      "code": "PROD002",
-      "description": "Produto 2"
-    }
+    { "code": "1001", "description": "Produto 1", "unit": "UN" },
+    { "code": "1002", "description": "Produto 2", "unit": "KG" }
   ]
 }
 ```
 
-- **Respostas (esperado)**:
-  - `201 Created`: produtos criados/importados.
-  - `400 Bad Request`: payload inválido.
-  - `401 Unauthorized`: não autenticado.
-  - `409 Conflict`: conflito com códigos já existentes.
+Códigos que já existem são ignorados (`skipped`). Códigos repetidos no mesmo array derrubam a requisição inteira.
 
-> Para o frontend, este endpoint é útil para importação em massa sem CSV, por exemplo, colando dados de uma planilha tratada no próprio app.
+- **Respostas**:
+  - `200 OK`:
+
+    ```json
+    {
+      "created": [{ "code": "1001", "description": "Produto 1", "unit": "UN" }],
+      "total_created": 1,
+      "skipped": [{ "code": "1002", "description": "Produto 2", "unit": "KG" }],
+      "total_skipped": 1,
+      "errors": []
+    }
+    ```
+
+  - `400`: payload inválido, `{ "error": "Nenhum produto enviado." }`, `{ "error": "Há códigos repetidos no envio." }` ou código inválido.
+  - `401`: não autenticado.
+
+`errors` lista falhas de gravação: `{ "code", "description", "error" }`.
+
+---
+
+### PUT `/products/updateABCSales` — Alternar curva ABC
+
+Inverte `isAbcSales` do produto.
+
+- **Auth**: Bearer.
+- **Query**: `?id=<productId>`
+- **Body**: vazio.
+- **Respostas**:
+  - `200 OK`:
+
+    ```json
+    {
+      "message": "ABC de venda definido com sucesso.",
+      "product": {
+        "id": "uuid",
+        "code": "123",
+        "description": "string",
+        "isAbcSales": true
+      }
+    }
+    ```
+
+  - `400`: `{ "error": "Id do produto não enviado." }`
+  - `401`: não autenticado.
+  - `404`: `{ "error": "Produto não encontrado.", "product": null }`
 
 ---
 
 ## 📊 Inventários
 
+Decimais (`stockExpected`, `stockCounted`, `difference`) chegam como **string** (`"10.00"`).
+
 ### GET `/inventories` — Listar inventários
 
-- **Descrição**: lista todos os inventários do usuário, com seus itens.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-- **Query/Body**: não possui.
+- **Auth**: Bearer.
 - **Respostas**:
-  - `200 OK`:
+  - `200 OK`: array. Pode ser `[]`.
 
     ```json
     [
       {
         "id": "uuid",
-        "name": "Inventário Janeiro",
+        "name": "Inventário Setembro",
         "createdAt": "datetime",
         "inventoryItems": [
           {
-            "stockExpected": "decimal",
-            "stockCounted": "decimal",
-            "difference": "decimal",
+            "stockExpected": "10.00",
+            "stockCounted": "12.00",
+            "difference": "2.00",
             "product": {
               "id": "uuid",
-              "code": "string",
+              "code": "123",
               "description": "string"
             }
           }
@@ -319,68 +317,31 @@ Formato esperado do CSV (configuração atual):
     ]
     ```
 
-  - `401 Unauthorized`: não autenticado.
+  - `401`: não autenticado.
 
 ---
 
 ### GET `/inventory` — Detalhar inventário por ID
 
-- **Descrição**: retorna um inventário específico com seus itens.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-- **Query**:
-
-```text
-?id=<inventoryId>
-```
-
+- **Auth**: Bearer.
+- **Query**: `?id=<inventoryId>`
 - **Respostas**:
-  - `200 OK`:
-
-    ```json
-    {
-      "id": "uuid",
-      "name": "Inventário Janeiro",
-      "createdAt": "datetime",
-      "inventoryItems": [
-        {
-          "stockExpected": "decimal",
-          "stockCounted": "decimal",
-          "difference": "decimal",
-          "product": {
-            "id": "uuid",
-            "code": "string",
-            "description": "string"
-          }
-        }
-      ]
-    }
-    ```
-
-  - `400 Bad Request`: id não enviado ou inválido.
-  - `401 Unauthorized`: não autenticado.
-  - `404 Not Found`: inventário não encontrado.
+  - `200 OK`: um objeto no mesmo formato de um item da listagem.
+  - `400`: id ausente.
+  - `401`: não autenticado.
+  - `404`: `{ "error": "Recurso não encontrado." }`
 
 ---
 
 ### GET `/inventory/suggested` — Produtos sugeridos para inventário
 
-- **Descrição**: retorna produtos que estão há X dias sem inventário (ou nunca inventariados).
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-- **Query**:
+Produtos nunca inventariados ou com último inventário anterior a `days` dias. A amostra é aleatória, no máximo `limit` itens.
 
-```text
-?days=<número_obrigatório>&limit=<número_opcional_default_100>
-```
-
-Exemplos:
-
-- `GET /inventory/suggested?days=30`
-- `GET /inventory/suggested?days=60&limit=50`
-
+- **Auth**: Bearer.
+- **Query**: `?days=<número>&limit=<opcional, padrão 100>`
+- **Exemplos**:
+  - `GET /inventory/suggested?days=30`
+  - `GET /inventory/suggested?days=60&limit=50`
 - **Respostas**:
   - `200 OK`:
 
@@ -389,47 +350,42 @@ Exemplos:
       "products": [
         {
           "id": "uuid",
-          "code": "string",
+          "code": "123",
           "description": "string",
-          "unit": "string | null",
-          "lastInventory": "datetime | null",
+          "unit": "UN",
+          "lastInventory": null,
+          "isAbcSales": false,
           "createdAt": "datetime",
-          "updatedAt": "datetime"
+          "updatedAt": "datetime",
+          "userId": "uuid"
         }
       ],
       "total": 1
     }
     ```
 
-  - `400 Bad Request`: parâmetro `days` ausente ou inválido.
-  - `401 Unauthorized`: não autenticado.
+  - `400`: `days` ausente, inválido, ou `0` (`{ "error": "Dias não enviado." }`).
+  - `401`: não autenticado.
 
-> Ideal para telas de “Inventário sugerido”, com filtros por período.
+`total` é o tamanho desta lista, não o total elegível no banco.
 
 ---
 
-### GET `/inventory/product` — Histórico de inventários por produto
+### GET `/inventory/product` — Histórico de um produto
 
-- **Descrição**: retorna o histórico de inventários de um produto.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-- **Query**:
-
-```text
-?id=<productId>
-```
-
+- **Auth**: Bearer.
+- **Query**: `?id=<productId>` (UUID do produto).
 - **Respostas**:
   - `200 OK`:
 
     ```json
     {
       "id": "uuid",
-      "code": "string",
+      "code": "123",
       "description": "string",
-      "unit": "string | null",
+      "unit": "UN",
       "lastInventory": "datetime | null",
+      "isAbcSales": false,
       "createdAt": "datetime",
       "updatedAt": "datetime",
       "userId": "uuid",
@@ -438,90 +394,33 @@ Exemplos:
           "id": "uuid",
           "inventoryId": "uuid",
           "productId": "uuid",
-          "unitInput": "string | null",
-          "stockExpected": "decimal",
-          "stockCounted": "decimal",
-          "difference": "decimal",
+          "unitInput": "UN",
+          "stockExpected": "10.00",
+          "stockCounted": "12.00",
+          "difference": "2.00",
           "createdAt": "datetime"
         }
       ]
     }
     ```
 
-  - `400 Bad Request`: id do produto não enviado ou inválido.
-  - `401 Unauthorized`: não autenticado.
-  - `404 Not Found`: produto não encontrado.
+  - `400`: id ausente.
+  - `401`: não autenticado.
+  - `404`: `{ "error": "Recurso não encontrado." }`
 
 ---
 
-### POST `/inventory/import` — Criar inventário via CSV
+### POST `/inventory` — Criar inventário
 
-- **Descrição**: cria um novo inventário importando os itens de um arquivo CSV.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-  - `Content-Type: multipart/form-data`
-- **Body (form-data)**:
-  - `file`: arquivo CSV com os itens do inventário.
-  - `inventoryName`: nome do inventário (string).
-
-Formato esperado do CSV:
-
-- Separador: `;`
-- Encoding: `latin1`
-- Headers esperados (exemplo): `["Código do Produto", "Unidade", "Digitado", "Estoque"]`  
-  (ver `InventoryCsvConfig.ts` para confirmação).
-
-- **Respostas**:
-  - `201 Created` (ou `200 OK`, de acordo com implementação):
-
-    ```json
-    {
-      "data": {
-        "id": "uuid",
-        "name": "Inventário Janeiro",
-        "createdAt": "datetime",
-        "inventoryItems": [
-          {
-            "stockExpected": "decimal",
-            "stockCounted": "decimal",
-            "difference": "decimal",
-            "product": {
-              "id": "uuid",
-              "code": "string",
-              "description": "string"
-            }
-          }
-        ]
-      },
-      "total_itens": 10
-    }
-    ```
-
-  - `400 Bad Request`:
-    - Nome de inventário já cadastrado.
-    - CSV inválido ou produtos não encontrados.
-  - `401 Unauthorized`: não autenticado.
-
-> Endpoint indicado para telas com upload de planilha de contagem física.
-
----
-
-### POST `/inventory` — Criar inventário manualmente
-
-- **Descrição**: cria um inventário informando a lista de produtos e contagens via JSON.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-  - `Content-Type: application/json`
+- **Auth**: Bearer.
 - **Body**:
 
 ```json
 {
-  "inventoryName": "Inventário Janeiro",
+  "inventoryName": "Inventário Setembro",
   "inventoryItens": [
     {
-      "productId": "código_ou_id_do_produto",
+      "productId": "123",
       "unitInput": "UN",
       "stockExpected": 10,
       "stockCounted": 12
@@ -530,23 +429,25 @@ Formato esperado do CSV:
 }
 ```
 
+`productId` é o **código** do produto (como está salvo), não o UUID. `unitInput` é opcional. `difference` e `lastInventory` são calculados no servidor.
+
 - **Respostas**:
-  - `201 Created` (ou `200 OK`):
+  - `200 OK`:
 
     ```json
     {
       "newInventory": {
         "id": "uuid",
-        "name": "Inventário Janeiro",
+        "name": "Inventário Setembro",
         "createdAt": "datetime",
         "inventoryItems": [
           {
-            "stockExpected": "decimal",
-            "stockCounted": "decimal",
-            "difference": "decimal",
+            "stockExpected": "10.00",
+            "stockCounted": "12.00",
+            "difference": "2.00",
             "product": {
               "id": "uuid",
-              "code": "string",
+              "code": "123",
               "description": "string"
             }
           }
@@ -555,62 +456,43 @@ Formato esperado do CSV:
     }
     ```
 
-  - `400 Bad Request`:
-    - Nome de inventário já cadastrado.
-    - Produtos não encontrados.
-    - Payload inválido.
-  - `401 Unauthorized`: não autenticado.
+  - `400`: payload inválido ou `{ "error": "Nome de inventário já cadastrado." }`
+  - `401`: não autenticado.
+  - `404`: `{ "error": "Um ou mais produtos não foram encontrados." }`
+  - `429`: limite de criação.
 
-Regra importante:
-
-- `difference = stockCounted - stockExpected` é calculado no backend.
-- `lastInventory` dos produtos é atualizado.
+O mesmo produto não pode aparecer duas vezes no mesmo inventário.
 
 ---
 
 ### DELETE `/inventory` — Deletar inventário
 
-- **Descrição**: remove um inventário e todos os seus itens.
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-- **Query**:
+Remove o inventário e os itens. Não recalcula `lastInventory` dos produtos.
 
-```text
-?id=<inventoryId>
-```
-
+- **Auth**: Bearer.
+- **Query**: `?id=<inventoryId>`
 - **Respostas**:
   - `200 OK`:
 
     ```json
     {
-      "message": "Inventário deletado com sucesso"
+      "message": "Inventário Inventário Setembro deletado com sucesso"
     }
     ```
 
-  - `400 Bad Request`: id inválido (via schema).
-  - `401 Unauthorized`: não autenticado.
-  - `404 Not Found`: inventário não encontrado.
+  - `400`: id ausente.
+  - `401`: não autenticado.
+  - `404`: `{ "error": "Recurso não encontrado." }`
 
 ---
 
 ## 📈 Dashboard
 
-### GET `/dashboard` — Resumo agregado do sistema
+### GET `/dashboard` — Resumo agregado
 
-- **Descrição**: retorna totais, métricas do período e listas recentes em uma única chamada (ideal para a home do frontend).
-- **Auth**: **requer token**.
-- **Headers**:
-  - `Authorization: Bearer <token>`
-- **Query**:
+Uma chamada para a home. A janela é **fixa em 30 dias**. Query string é ignorada.
 
-| Parâmetro | Tipo | Default | Descrição |
-|-----------|------|---------|-----------|
-| `days` | `number` | `30` | Janela em dias para métricas do período |
-| `recentInventoriesLimit` | `number` | `5` | Qtd. de inventários recentes (máx. 50) |
-| `recentProductsLimit` | `number` | `5` | Qtd. de produtos inventariados recentemente (máx. 50) |
-
+- **Auth**: Bearer.
 - **Respostas**:
   - `200 OK`:
 
@@ -618,8 +500,14 @@ Regra importante:
     {
       "period": {
         "days": 30,
-        "from": "2026-06-23T15:00:00.000Z",
-        "to": "2026-07-23T15:00:00.000Z"
+        "current": {
+          "from": "2026-08-27T18:00:00.000Z",
+          "to": "2026-09-26T18:00:00.000Z"
+        },
+        "previous": {
+          "from": "2026-07-28T18:00:00.000Z",
+          "to": "2026-08-27T18:00:00.000Z"
+        }
       },
       "totals": {
         "products": 1250,
@@ -628,81 +516,110 @@ Regra importante:
         "productsNeverInventoried": 42,
         "productsInventoriedLastDays": 80
       },
-      "recentInventories": [
-        {
-          "id": "uuid",
-          "name": "Inventário Junho 2026",
-          "createdAt": "2026-06-26T12:00:00.000Z",
-          "itemsCount": 120
-        }
-      ],
       "recentlyInventoriedProducts": [
         {
           "id": "uuid",
-          "code": "ABC-001",
+          "code": "123",
           "description": "Produto exemplo",
           "unit": "UN",
-          "lastInventory": "2026-06-26T12:00:00.000Z"
+          "lastInventory": "2026-09-20T12:00:00.000Z"
+        }
+      ],
+      "currentPeriod": {
+        "totalInventories": 18,
+        "totalItems": 240,
+        "totalDifference": 35.5
+      },
+      "previousPeriod": {
+        "totalInventories": 12,
+        "totalItems": 180,
+        "totalDifference": 22
+      },
+      "latestInventories": [
+        {
+          "id": "uuid",
+          "name": "Inventário Setembro",
+          "createdAt": "2026-09-26T18:00:00.000Z",
+          "itemsCount": 120,
+          "difference": 15.5
         }
       ]
     }
     ```
 
-  - `401 Unauthorized`: token ausente/inválido.
-  - `400 Bad Request`: query inválida.
+  - `401`: token ausente ou inválido.
 
-> O frontend **não** deve usar `GET /products` + `GET /inventories` só para calcular esses totais.
+| Campo | Uso na UI |
+|-------|-----------|
+| `totals` | Cards gerais |
+| `currentPeriod` / `previousPeriod` | Comparativo dos últimos 30 dias contra os 30 anteriores. `totalDifference` é a soma dos valores absolutos |
+| `latestInventories` | Até 5 inventários do período atual, com quantidade de itens e diferença absoluta |
+| `recentlyInventoriedProducts` | Produtos com inventário nos últimos 30 dias |
 
 ---
 
 ## ⚠️ Padrões de erro
 
-Erros seguem um padrão consistente. Exemplos:
-
-### Erro de validação (`400`)
+### Validação (`400`)
 
 ```json
 {
   "error": "Erro validação",
-  "details": [
-    {
-      "message": "mensagem de erro específica"
-    }
-  ]
+  "details": [{ "message": "mensagem de erro específica" }]
 }
 ```
 
-### Erro genérico / domínio
-
-Dependendo do caso, o backend retorna:
+### Domínio
 
 ```json
 {
-  "error": "Mensagem geral",
-  "message": "Descrição detalhada do erro"
+  "error": "Mensagem controlada"
 }
 ```
 
-Status comuns:
+### Bearer inválido (`401`)
 
-- `400 Bad Request`: payload inválido ou dados de domínio inconsistentes.
-- `401 Unauthorized`: token ausente/inválido, credenciais incorretas.
-- `403 Forbidden`: permissão insuficiente (se aplicável).
-- `404 Not Found`: recurso não encontrado.
-- `409 Conflict`: conflito de dados (duplicidade, etc.).
-- `429 Too Many Requests`: limite de requisições/ tentativas excedido.
-- `500 Internal Server Error`: erro inesperado.
+```json
+{ "message": "Authorization token is required" }
+```
+
+```json
+{ "message": "token invalid" }
+```
+
+| Status | Quando |
+|--------|--------|
+| `400` | Payload ou query inválidos, código de produto inválido, nome de inventário duplicado |
+| `401` | Credenciais, refresh ou access token |
+| `403` | Sem permissão |
+| `404` | Recurso não encontrado |
+| `409` | Usuário ou produto já cadastrado |
+| `429` | Rate limit. O corpo é o texto da mensagem do limitador |
+| `500` | `{ "error": "Erro interno do servidor" }` |
+
+Mensagens estáveis para o frontend tratar:
+
+- `Credenciais inválidas.`
+- `Refresh token inválido.`
+- `Refresh token expirado.`
+- `Usuário já cadastrado.`
+- `Produto já cadastrado.`
+- `Produto não encontrado.`
+- `Código do produto inválido.`
+- `Há códigos repetidos no envio.`
+- `Nome de inventário já cadastrado.`
+- `Um ou mais produtos não foram encontrados.`
+- `Recurso não encontrado.`
 
 ---
 
 ## ✅ Dicas de uso no frontend
 
-- **Centralize o token**: use um interceptor (ex.: Axios) para injetar `Authorization: Bearer <token>` automaticamente.
-- **Trate 401 globalmente**: redirecione para login ou tente refresh de token via `/auth/refresh`.
-- **Para uploads de CSV**:
-  - Use `FormData` e não defina manualmente o header `Content-Type` (o browser fará isso, incluindo o boundary).
-- **Para números decimais**:
-  - O backend usa `decimal` (string ou número, conforme serialização). Trate-os como `string` se precisar de precisão exata em cálculos de frontend.
-
-Para exemplos adicionais e testes interativos, utilize também o **Swagger UI** em `http://localhost:3000/api-docs`.
-
+- Interceptor: injete `Authorization: Bearer <token>` nas rotas protegidas.
+- Em `401` com `token invalid`, chame `POST /auth/refresh` com o refresh guardado e repita a requisição. Se o refresh falhar, vá para o login.
+- No logout, chame `POST /auth/logout` e só então limpe o armazenamento local.
+- Não há upload de CSV. Importação de produtos é `POST /products/import/many`.
+- Na criação de inventário, envie o **código** do produto em `productId`.
+- Trate decimais de estoque como string para não perder casas.
+- `isAbcSales` vem na listagem de produtos e muda só pelo `PUT /products/updateABCSales`.
+- A home deve usar `GET /dashboard`. Não calcule esses totais baixando `GET /products` e `GET /inventories`.
