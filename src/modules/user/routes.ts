@@ -11,7 +11,13 @@ import { CreateUserController } from "./controllers/CreateUserController";
 import { AuthUserController } from "./controllers/AuthUserController";
 import { RefreshTokenController } from "./controllers/RefreshTokenController";
 import { LogoutController } from "./controllers/LogoutController";
-import { authLimiter } from "../../middlewares/rateLimiter";
+import {
+  authLimiter,
+  loginLimiter,
+  readLimiter,
+  refreshTokenLimiter,
+  registerLimiter,
+} from "../../middlewares/rateLimiter";
 import { GetUserByTokenController } from "./controllers/getUserByTokenController";
 
 const UserRoutes = Router();
@@ -71,7 +77,7 @@ const UserRoutes = Router();
  */
 UserRoutes.post(
   "/api/v1/user",
-  authLimiter,
+  registerLimiter,
   validateSchema(createUserSchema),
   new CreateUserController().handle,
 );
@@ -117,7 +123,7 @@ UserRoutes.post(
  */
 UserRoutes.post(
   "/api/v1/auth",
-  authLimiter,
+  loginLimiter,
   validateSchema(authUserSchema),
   new AuthUserController().handle,
 );
@@ -157,7 +163,7 @@ UserRoutes.post(
  */
 UserRoutes.post(
   "/api/v1/auth/refresh",
-  authLimiter,
+  refreshTokenLimiter,
   validateSchema(refreshTokenSchema),
   new RefreshTokenController().handle,
 );
@@ -240,6 +246,7 @@ UserRoutes.post(
  */
 UserRoutes.get(
   "/api/v1/auth/me",
+  readLimiter,
   isAuthenticated,
   new GetUserByTokenController().handle,
 );

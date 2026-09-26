@@ -12,7 +12,11 @@ import { ListAllInventoriesController } from "./controllers/ListAllInventoriesCo
 import { CreateInventoryController } from "./controllers/CreateInventoryController";
 import { ListInventaryByIdController } from "./controllers/ListInventoryByIdController";
 import { SuggestedInventoryController } from "./controllers/SuggestedInventoryController";
-import { apiLimiter } from "../../middlewares/rateLimiter";
+import {
+  apiLimiter,
+  readLimiter,
+  writeLimiter,
+} from "../../middlewares/rateLimiter";
 import { SearchProductInventoriesController } from "./controllers/SearchProductInventoriesController";
 
 const InventoryRoutes = Router();
@@ -43,6 +47,7 @@ const InventoryRoutes = Router();
  */
 InventoryRoutes.get(
   "/api/v1/inventories",
+  readLimiter,
   isAuthenticated,
   new ListAllInventoriesController().handle,
 );
@@ -84,6 +89,7 @@ InventoryRoutes.get(
  */
 InventoryRoutes.get(
   "/api/v1/inventory",
+  readLimiter,
   isAuthenticated,
   validateSchema(idInventorySchema),
   new ListInventaryByIdController().handle,
@@ -129,6 +135,7 @@ InventoryRoutes.get(
  */
 InventoryRoutes.get(
   "/api/v1/inventory/suggested",
+  readLimiter,
   isAuthenticated,
   validateSchema(suggestedInventorySchema),
   new SuggestedInventoryController().handle,
@@ -180,6 +187,7 @@ InventoryRoutes.get(
  */
 InventoryRoutes.get(
   "/api/v1/inventory/product",
+  readLimiter,
   isAuthenticated,
   validateSchema(idProductInventorySchema),
   new SearchProductInventoriesController().handle,
@@ -257,6 +265,7 @@ InventoryRoutes.get(
  */
 InventoryRoutes.post(
   "/api/v1/inventory",
+  writeLimiter,
   isAuthenticated,
   apiLimiter,
   validateSchema(createInventorySchema),
@@ -304,6 +313,7 @@ InventoryRoutes.post(
  */
 InventoryRoutes.delete(
   "/api/v1/inventory",
+  writeLimiter,
   isAuthenticated,
   validateSchema(idInventorySchema),
   new DeleteInventoryController().handle,

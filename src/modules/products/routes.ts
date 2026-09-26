@@ -13,6 +13,7 @@ import {
 import { CreateManyProductsController } from "./controllers/CreateManyProductsController";
 import { validateCreateManyProducts } from "../../middlewares/validateCreateManyProducts";
 import UpdateABCSalesController from "./controllers/SetABCSalesController";
+import { readLimiter, writeLimiter } from "../../middlewares/rateLimiter";
 
 const ProductsRoutes = Router();
 
@@ -48,6 +49,7 @@ const ProductsRoutes = Router();
  */
 ProductsRoutes.get(
   "/api/v1/products",
+  readLimiter,
   isAuthenticated,
   new ListProductsController().handle,
 );
@@ -106,6 +108,7 @@ ProductsRoutes.get(
  */
 ProductsRoutes.post(
   "/api/v1/products",
+  writeLimiter,
   isAuthenticated,
   validateSchema(createProductSchema),
   new CreateProductController().handle,
@@ -113,6 +116,7 @@ ProductsRoutes.post(
 
 ProductsRoutes.post(
   "/api/v1/products/import/many",
+  writeLimiter,
   isAuthenticated,
   validateSchema(createManyProductsSchema),
   validateCreateManyProducts,
@@ -121,6 +125,7 @@ ProductsRoutes.post(
 
 ProductsRoutes.put(
   "/api/v1/products/updateABCSales",
+  writeLimiter,
   isAuthenticated,
   new UpdateABCSalesController().handle,
 );
