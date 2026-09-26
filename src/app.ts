@@ -33,7 +33,9 @@ app.use(requestContextMiddleware);
 app.use(httpAccessLogger);
 
 // Swagger Documentation
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
 
 //Routes
 app.use(ProductsRoutes);
