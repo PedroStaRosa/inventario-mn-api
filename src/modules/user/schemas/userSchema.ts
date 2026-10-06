@@ -4,10 +4,13 @@ export const createUserSchema = z.object({
   body: z.object({
     name: z
       .string({ message: "O nome precisa ser um texto" })
-      .min(3, { message: "O nome precisa ter no minimo 3 letras" }),
+      .min(3, { message: "O nome precisa ter no minimo 3 letras" })
+      .max(255, { message: "O nome deve ter no máximo 255 caracteres" }),
     email: z
       .string({ message: "O email é obrigatório" })
-      .email({ message: "Precisa ser um email valido" }),
+      .email({ message: "Precisa ser um email valido" })
+      .min(1, { message: "O email é obrigatório" })
+      .max(255, { message: "O email deve ter no máximo 255 caracteres" }),
     password: z
       .string({ message: "A senha é obrigatória" })
       .min(8, { message: "A senha deve ter no mínimo 8 caracteres" })
@@ -26,7 +29,9 @@ export const authUserSchema = z.object({
   body: z.object({
     email: z
       .string({ message: "O email é obrigatório" })
-      .email({ message: "Precisa ser um email valido" }),
+      .email({ message: "Precisa ser um email valido" })
+      .min(1, { message: "O email é obrigatório" })
+      .max(255, { message: "O email deve ter no máximo 255 caracteres" }),
     password: z
       .string({ message: "A senha é obrigatória" })
       .min(1, { message: "A senha é obrigatória" })

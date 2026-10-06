@@ -8,6 +8,7 @@ import { validateSchema } from "../../middlewares/validateSchema";
 import {
   createManyProductsSchema,
   createProductSchema,
+  updateABCSalesSchema,
 } from "./schemas/productSchema";
 
 import { CreateManyProductsController } from "./controllers/CreateManyProductsController";
@@ -127,6 +128,7 @@ ProductsRoutes.put(
   "/api/v1/products/updateABCSales",
   writeLimiter,
   isAuthenticated,
+  validateSchema(updateABCSalesSchema),
   new UpdateABCSalesController().handle,
 );
 

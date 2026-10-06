@@ -116,7 +116,7 @@ const DashboardRoutes = Router();
 DashboardRoutes.get(
   "/api/v1/dashboard",
   isAuthenticated,
-  /* validateSchema(getDashboardSchema), */
+  validateSchema(getDashboardSchema),
   new GetDashboardController().handle,
 );
 
