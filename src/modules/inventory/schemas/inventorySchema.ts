@@ -29,9 +29,12 @@ export const idProductInventorySchema = z.object({
 
 export const suggestedInventorySchema = z.object({
   query: z.object({
-    days: z.coerce.number({
-      message: "days: Dias de busca é obrigatório",
-    }),
+    days: z.coerce
+      .number({
+        message: "days: Dias de busca é obrigatório",
+      })
+      .min(1, "Dias de busca deve ser maior que 0")
+      .max(365, "Dias de busca deve ser menor que 366"),
     limit: z.coerce.number().default(100),
   }),
 });

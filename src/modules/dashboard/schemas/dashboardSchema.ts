@@ -3,8 +3,13 @@ import { z } from "zod";
 export const getDashboardSchema = z.object({
   query: z.object({
     days: z.coerce.number().int().positive().default(30),
-    /* recentInventoriesLimit: z.coerce.number().int().positive().max(50).default(5),
-        recentProductsLimit: z.coerce.number().int().positive().max(50).default(5), */
+    recentInventoriesLimit: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(50)
+      .default(5),
+    recentProductsLimit: z.coerce.number().int().positive().max(100).default(5),
   }),
 });
 
