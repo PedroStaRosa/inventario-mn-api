@@ -17,12 +17,14 @@ const app = express();
 
 app.set("trust proxy", 1);
 /* app.use(cors()); */
+const origins = (process.env.ALLOWED_ORIGINS ?? "").split(",").map((origin) => origin.trim()).filter(Boolean)
+if (origins.length === 0) {
+  throw new Error("ALLOWED_ORIGINS não está definido");
+}
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(",") || [
-      "http://localhost:3000",
-    ],
-    credentials: true,
+    origin: origins,
+    credentials: false,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
   }),
