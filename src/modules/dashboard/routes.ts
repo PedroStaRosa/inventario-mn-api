@@ -3,6 +3,7 @@ import { isAuthenticated } from "../../middlewares/isAuthenticated";
 import { validateSchema } from "../../middlewares/validateSchema";
 import { GetDashboardController } from "./controllers/GetDashboardController";
 import { getDashboardSchema } from "./schemas/dashboardSchema";
+import { readLimiter } from "../../middlewares/rateLimiter";
 
 const DashboardRoutes = Router();
 
@@ -115,6 +116,7 @@ const DashboardRoutes = Router();
  */
 DashboardRoutes.get(
   "/api/v1/dashboard",
+  readLimiter,
   isAuthenticated,
   validateSchema(getDashboardSchema),
   new GetDashboardController().handle,

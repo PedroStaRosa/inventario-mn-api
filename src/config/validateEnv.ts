@@ -7,7 +7,22 @@ const envSchema = z.object({
     .string()
     .min(32, "JWT_SECRET_KEY deve ter no mínimo 32 caracteres"),
   EXPRESS_PORT: z.string().regex(/^\d+$/).optional(),
-  ALLOWED_ORIGINS: z.string(),
+  ALLOWED_ORIGINS: z
+  .string()
+  .min(1, "ALLOWED_ORIGINS é obrigatório")
+  .transform((value) =>
+    value
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  )
+  .refine((origins) => origins.length > 0, {
+    message: "ALLOWED_ORIGINS deve ter ao menos uma origem",
+  })
+  .refine(
+    (origins) => origins.every((origin) => z.string().url().safeParse(origin).success),
+    { message: "Cada item de ALLOWED_ORIGINS deve ser uma URL válida" },
+  ),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
     .optional(),
