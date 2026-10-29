@@ -35,7 +35,7 @@ export const suggestedInventorySchema = z.object({
       })
       .min(1, "Dias de busca deve ser maior que 0")
       .max(365, "Dias de busca deve ser menor que 366"),
-    limit: z.coerce.number().default(100),
+    limit: z.coerce.number().max(100).default(100),
   }),
 });
 
@@ -67,6 +67,6 @@ export const createInventorySchema = z.object({
       .array(inventoryProductSchema, {
         message: "inventoryItens: Array de Itens do inventario é obrigatório",
       })
-      .min(1, "Deve conter ao menos um produto inventariado"),
+      .min(1, "Deve conter ao menos um produto inventariado").max(5000, "Deve conter no máximo 5000 produtos inventariados"),
   }),
 });

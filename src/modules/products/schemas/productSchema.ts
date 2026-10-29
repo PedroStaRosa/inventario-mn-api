@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const unitSchema = ["UN", "KG", "LT", "SC", "PT"] as const;
+const unitSchema = ["UN", "KG", "LT", "SC", "PT", "CX"] as const;
 export interface CreateProductProps {
   code: string;
   description: string;
@@ -22,7 +22,7 @@ const productSchema = z.object({
     error: (issue) =>
       issue.input === undefined
         ? "Unidade é obrigatória"
-        : "Unidade inválida - UN, KG, LT, SC, PT",
+        : "Unidade inválida - UN, KG, LT, SC, PT, CX",
   }),
 });
 
